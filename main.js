@@ -514,6 +514,10 @@ let titleOpacity = 1;
 function init() {
     let loadedCount = 0;
     const totalModels = 4;
+    const modelNames = ['天空小船', '书本小镇', '冬天', '山河图'];
+
+    const modelProgress = [0, 0, 0, 0];
+    const modelTotals = [0, 0, 0, 0];
 
     let currentPercent = 0;
     let targetPercent = 0;
@@ -537,17 +541,31 @@ function init() {
         }
     }
 
-    function setProgress(percent) {
-        targetPercent = Math.min(percent, 100);
+    function updateProgress() {
+        const totalLoaded = modelProgress.reduce((a, b) => a + b, 0);
+        const totalSize = modelTotals.reduce((a, b) => a + b, 0);
+        if (totalSize > 0) {
+            targetPercent = Math.min((totalLoaded / totalSize) * 100, 100);
+        } else {
+            targetPercent = (loadedCount / totalModels) * 100;
+        }
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText && loadedCount < totalModels) {
+            loadingText.textContent = '✦ 正在加载 ' + modelNames[Math.min(loadedCount, totalModels - 1)] + ' (' + (loadedCount + 1) + '/' + totalModels + ') ✦';
+        }
         if (!animFrame) {
             animFrame = requestAnimationFrame(animateProgressBar);
         }
     }
 
-    function onModelLoaded() {
+    function onModelLoaded(modelIndex) {
+        modelProgress[modelIndex] = modelTotals[modelIndex] || 1;
         loadedCount++;
-        setProgress((loadedCount / totalModels) * 100);
+        updateProgress();
         if (loadedCount >= totalModels) {
+            targetPercent = 100;
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.textContent = '✦ 梦 境 加 载 完 成 ✦';
             const checkDone = setInterval(() => {
                 if (currentPercent >= 99) {
                     clearInterval(checkDone);
@@ -570,7 +588,11 @@ function init() {
         skyShipModel.position.set(0, 5, 0);
         skyShipModel.visible = true;
         scene.add(skyShipModel);
-        onModelLoaded();
+        onModelLoaded(0);
+    }, (loaded, total) => {
+        modelProgress[0] = loaded;
+        modelTotals[0] = total;
+        updateProgress();
     });
 
     loadGLTFModel('book_town.glb', (townModel) => {
@@ -579,7 +601,11 @@ function init() {
         bookTownModel.position.set(0 * 500, -0.4 * 500, -3.3 * 500);
         bookTownModel.visible = true;
         scene.add(bookTownModel);
-        onModelLoaded();
+        onModelLoaded(1);
+    }, (loaded, total) => {
+        modelProgress[1] = loaded;
+        modelTotals[1] = total;
+        updateProgress();
     });
 
     loadGLTFModel('winter_scene.glb', (winterModel) => {
@@ -589,7 +615,11 @@ function init() {
         winterSceneModel.rotation.y = Math.PI;
         winterSceneModel.visible = true;
         scene.add(winterSceneModel);
-        onModelLoaded();
+        onModelLoaded(2);
+    }, (loaded, total) => {
+        modelProgress[2] = loaded;
+        modelTotals[2] = total;
+        updateProgress();
     });
 
     loadGLTFModel('mountain_and_river_scroll.glb', (mountainModel) => {
@@ -599,7 +629,11 @@ function init() {
         mountainRiverModel.rotation.y = -Math.PI / 2;
         mountainRiverModel.visible = true;
         scene.add(mountainRiverModel);
-        onModelLoaded();
+        onModelLoaded(3);
+    }, (loaded, total) => {
+        modelProgress[3] = loaded;
+        modelTotals[3] = total;
+        updateProgress();
     });
 
     camera.position.set(-818, 160, 30.5);

@@ -544,6 +544,8 @@ function init() {
         }
         if (currentPercent < targetPercent) {
             animFrame = requestAnimationFrame(animateProgressBar);
+        } else {
+            animFrame = null;
         }
     }
 

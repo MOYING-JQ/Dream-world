@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梦境 · Dream Realm</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0a0a1a;
+            font-family: 'Arial', sans-serif;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8' fill='none' stroke='rgba(180,160,255,0.8)' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='12' r='2' fill='rgba(200,190,255,0.9)'/%3E%3C/svg%3E") 12 12, auto;
+            animation: bgShift 8s ease-in-out infinite alternate;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+        #mouse-trail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 200;
+            pointer-events: none;
+        }
+        #snow-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 150;
+            pointer-events: none;
+        }
+
+        #dream-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            pointer-events: none;
+            text-align: center;
+            transition: opacity 1.5s ease;
+        }
+
+        #dream-title .title-main {
+            font-family: 'Ma Shan Zheng', 'STKaiti', 'KaiTi', serif;
+            font-size: 120px;
+            color: #fff;
+            text-shadow:
+                0 0 30px rgba(180, 160, 255, 0.8),
+                0 0 60px rgba(180, 160, 255, 0.5),
+                0 0 100px rgba(140, 120, 255, 0.4),
+                0 0 150px rgba(120, 100, 255, 0.3),
+                0 0 10px rgba(255, 255, 255, 0.9);
+            animation: titleGlow 3s ease-in-out infinite;
+            letter-spacing: 30px;
+        }
+
+        #dream-title .title-sub {
+            font-family: 'Georgia', serif;
+            font-size: 20px;
+            color: rgba(200, 190, 255, 0.8);
+            text-shadow: 0 0 20px rgba(180, 160, 255, 0.6);
+            letter-spacing: 8px;
+            margin-top: 10px;
+            animation: subtitleFade 3s ease-in-out infinite;
+        }
+
+        #dream-title .title-hint {
+            font-size: 14px;
+            color: rgba(200, 190, 255, 0.5);
+            margin-top: 40px;
+            letter-spacing: 4px;
+            animation: hintPulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% {
+                text-shadow:
+                    0 0 30px rgba(180, 160, 255, 0.8),
+                    0 0 60px rgba(180, 160, 255, 0.5),
+                    0 0 100px rgba(140, 120, 255, 0.4),
+                    0 0 150px rgba(120, 100, 255, 0.3);
+            }
+            50% {
+                text-shadow:
+                    0 0 40px rgba(200, 180, 255, 1),
+                    0 0 80px rgba(180, 160, 255, 0.7),
+                    0 0 120px rgba(160, 140, 255, 0.5),
+                    0 0 180px rgba(140, 120, 255, 0.4);
+            }
+        }
+
+        @keyframes subtitleFade {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.9; }
+        }
+        @keyframes sceneFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        #ui {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 100;
+            color: rgba(200, 190, 255, 0.9);
+            background: rgba(20, 15, 40, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 20px 25px;
+            border-radius: 16px;
+            font-size: 13px;
+            border: 1px solid rgba(160, 140, 255, 0.2);
+            box-shadow: 0 0 30px rgba(120, 100, 255, 0.1), inset 0 0 30px rgba(120, 100, 255, 0.03);
+            transition: opacity 0.5s;
+            animation: uiFloat 4s ease-in-out infinite, uiGlow 3s ease-in-out infinite;
+        }
+        @keyframes uiFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        @keyframes uiGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(120, 100, 255, 0.1), inset 0 0 20px rgba(120, 100, 255, 0.02); }
+            50% { box-shadow: 0 0 40px rgba(160, 140, 255, 0.2), inset 0 0 40px rgba(120, 100, 255, 0.06); }
+        }
+
+        #ui h2 {
+            margin-bottom: 12px;
+            font-size: 18px;
+            color: rgba(220, 210, 255, 1);
+            text-shadow: 0 0 10px rgba(180, 160, 255, 0.5);
+            font-family: 'Georgia', serif;
+            letter-spacing: 3px;
+        }
+
+        #ui p {
+            margin: 6px 0;
+            line-height: 1.6;
+            color: rgba(190, 180, 240, 0.8);
+        }
+
+        #ui p strong {
+            color: rgba(220, 210, 255, 1);
+        }
+
+        #map-switch {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .map-btn {
+            padding: 12px 24px;
+            background: rgba(60, 40, 120, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(160, 140, 255, 0.3);
+            color: rgba(200, 190, 255, 0.9);
+            border-radius: 25px;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='10' fill='none' stroke='rgba(200,180,255,0.9)' stroke-width='2'/%3E%3Ccircle cx='14' cy='14' r='3' fill='rgba(220,210,255,1)'/%3E%3C/svg%3E") 14 14, pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            transition: all 0.4s ease;
+            font-family: 'Georgia', serif;
+            position: relative;
+            overflow: hidden;
+        }
+        .map-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(200, 180, 255, 0.15), transparent);
+            transition: left 0.6s ease;
+        }
+        .map-btn:hover::before {
+            left: 100%;
+        }
+
+        .map-btn:hover {
+            background: rgba(100, 70, 180, 0.7);
+            border-color: rgba(180, 160, 255, 0.6);
+            box-shadow: 0 0 25px rgba(140, 120, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .map-btn.active {
+            background: rgba(120, 80, 200, 0.7);
+            border-color: rgba(160, 140, 255, 0.6);
+            box-shadow: 0 0 30px rgba(140, 120, 255, 0.4);
+            animation: btnGlow 2s ease-in-out infinite;
+        }
+        @keyframes btnGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(140, 120, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(180, 160, 255, 0.6), 0 0 60px rgba(140, 120, 255, 0.3); }
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(200, 190, 255, 0.9);
+            font-size: 20px;
+            z-index: 200;
+            text-align: center;
+            letter-spacing: 4px;
+            animation: loadingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        @keyframes bgShift {
+            0% { background: #0a0a1a; }
+            100% { background: #0f0f2a; }
+        }
+
+        #speed-indicator {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            color: rgba(180, 200, 255, 0.8);
+            background: rgba(20, 15, 40, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid rgba(140, 160, 255, 0.2);
+            letter-spacing: 1px;
+        }
+
+        #marker-info {
+            position: absolute;
+            bottom: 80px;
+            right: 30px;
+            z-index: 100;
+            color: rgba(255, 210, 140, 0.9);
+            background: rgba(20, 15, 40, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid rgba(255, 200, 100, 0.3);
+            letter-spacing: 1px;
+        }
+
+        #pos-display {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            z-index: 100;
+            color: rgba(160, 150, 200, 0.6);
+            background: rgba(20, 15, 40, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 8px 14px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-family: 'Consolas', monospace;
+            border: 1px solid rgba(140, 120, 200, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="mouse-trail"></canvas>
+        <canvas id="snow-canvas"></canvas>
+        <div id="dream-title" style="opacity:0;">
+            <div class="title-main">梦境</div>
+            <div class="title-sub">DREAM REALM</div>
+            <div id="scene-name" style="opacity:0; transition:opacity 0.8s; font-family:'Ma Shan Zheng', serif; font-size:50px; color:rgba(255,255,255,0.8); text-shadow: 0 0 20px rgba(180, 160, 255, 0.6); letter-spacing:15px; margin-top:20px; animation: sceneFloat 3s ease-in-out infinite;">书本小镇</div>
+            <div class="title-hint">点击进入</div>
+        </div>
+        <div id="loading">✦ 梦 境 加 载 中 ✦</div>
+        <div id="ui" style="display:none;">
+            <h2>✦ 梦境 ✦</h2>
+            <p><strong>W/A/S/D</strong> — 穿梭梦境</p>
+            <p><strong>鼠标</strong> — 环顾四周</p>
+            <p><strong>滚轮</strong> — 调节速度</p>
+            <p><strong>Q/E</strong> — 上升/下降</p>
+            <p><strong>F</strong> — 标记 / <strong>G</strong> — 回溯 / <strong>F11</strong> — 全屏</p>
+            <p><strong>点击</strong> — 进入梦境</p>
+            <p><strong>ESC</strong> — 回到现实</p>
+        </div>
+        <div id="map-switch" style="display:none;">
+            <button class="map-btn active" data-map="start">✦ 起始位置</button>
+            <button class="map-btn" data-map="book_town">✦ 书本小镇</button>
+            <button class="map-btn" data-map="mountain_river">✦ 山河图</button>
+            <button class="map-btn" data-map="sky_ship">✦ 天空小船</button>
+            <button class="map-btn" data-map="winter">✦ 冬天</button>
+        </div>
+        <div id="speed-indicator">
+            速度 <span id="speed-value">100</span>
+        </div>
+        <div id="marker-info" style="display:none;">
+            暂无标记
+        </div>
+        <div id="pos-display">
+            x: 0.0 | y: 0.0 | z: 0.0
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>

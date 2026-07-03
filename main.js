@@ -520,14 +520,69 @@ let titleOpacity = 1;
 function init() {
     let loadedCount = 0;
     const totalModels = 4;
-    const modelNames = ['天空小船', '书本小镇', '冬天', '山河图'];
 
-    const modelProgress = [0, 0, 0, 0];
-    const modelTotals = [0, 0, 0, 0];
+    let currentModelIndex = 0;
+    let modelBytesLoaded = 0;
+    let modelBytesTotal = 0;
 
     let currentPercent = 0;
     let targetPercent = 0;
     let animFrame = null;
+
+    const modelConfigs = [
+        {
+            file: 'sky_ship_draco.glb',
+            name: '天空小船',
+            setup: (model) => {
+                skyShipModel = model;
+                skyShipModel.scale.set(500, 500, 500);
+                skyShipModel.position.set(0, 5, 0);
+                skyShipModel.visible = true;
+                scene.add(skyShipModel);
+            }
+        },
+        {
+            file: 'book_town_draco.glb',
+            name: '书本小镇',
+            setup: (townModel) => {
+                bookTownModel = townModel;
+                bookTownModel.scale.set(0.01 * 500, 0.01 * 500, 0.01 * 500);
+                bookTownModel.position.set(0 * 500, -0.4 * 500, -3.3 * 500);
+                bookTownModel.visible = true;
+                scene.add(bookTownModel);
+            }
+        },
+        {
+            file: 'winter_scene_draco.glb',
+            name: '冬天',
+            setup: (winterModel) => {
+                winterSceneModel = winterModel;
+                winterSceneModel.scale.set(0.01 * 800, 0.01 * 800, 0.01 * 800);
+                winterSceneModel.position.set(576, 95, -1293);
+                winterSceneModel.rotation.y = Math.PI;
+                winterSceneModel.visible = true;
+                scene.add(winterSceneModel);
+            }
+        },
+        {
+            file: 'mountain_and_river_scroll_draco.glb',
+            name: '山河图',
+            setup: (mountainModel) => {
+                mountainRiverModel = mountainModel;
+                mountainRiverModel.scale.set(0.01 * 800, 0.01 * 800, 0.01 * 800);
+                mountainRiverModel.position.set(78.3, -234, -2723);
+                mountainRiverModel.rotation.y = -Math.PI / 2;
+                mountainRiverModel.visible = true;
+                scene.add(mountainRiverModel);
+            }
+        }
+    ];
+
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
 
     function animateProgressBar() {
         const diff = targetPercent - currentPercent;
@@ -550,27 +605,36 @@ function init() {
     }
 
     function updateProgress() {
-        const totalLoaded = modelProgress.reduce((a, b) => a + b, 0);
-        const totalSize = modelTotals.reduce((a, b) => a + b, 0);
-        if (totalSize > 0) {
-            targetPercent = Math.min((totalLoaded / totalSize) * 100, 100);
+        if (modelBytesTotal > 0) {
+            const slicePerModel = 100 / totalModels;
+            const modelPercent = Math.min(modelBytesLoaded / modelBytesTotal, 1);
+            targetPercent = (loadedCount * slicePerModel) + (modelPercent * slicePerModel);
         } else {
             targetPercent = (loadedCount / totalModels) * 100;
         }
+
         const loadingText = document.getElementById('loading-text');
         if (loadingText && loadedCount < totalModels) {
-            loadingText.textContent = '✦ 正在加载 ' + modelNames[Math.min(loadedCount, totalModels - 1)] + ' (' + (loadedCount + 1) + '/' + totalModels + ') ✦';
+            const cfg = modelConfigs[currentModelIndex];
+            const sizeInfo = modelBytesTotal > 0
+                ? ' \u00B7 ' + formatBytes(modelBytesLoaded) + ' / ' + formatBytes(modelBytesTotal)
+                : '';
+            loadingText.textContent = '✦ 正在加载 ' + cfg.name + ' (' + (loadedCount + 1) + '/' + totalModels + ')' + sizeInfo + ' ✦';
         }
+
         if (!animFrame) {
             animFrame = requestAnimationFrame(animateProgressBar);
         }
     }
 
-    function onModelLoaded(modelIndex) {
-        modelProgress[modelIndex] = modelTotals[modelIndex] || 1;
+    function onModelLoaded() {
+        modelBytesLoaded = modelBytesTotal;
         loadedCount++;
         updateProgress();
-        if (loadedCount >= totalModels) {
+        currentModelIndex++;
+        if (currentModelIndex < totalModels) {
+            loadNextModel();
+        } else {
             targetPercent = 100;
             const loadingText = document.getElementById('loading-text');
             if (loadingText) loadingText.textContent = '✦ 梦 境 加 载 完 成 ✦';
@@ -590,59 +654,22 @@ function init() {
         }
     }
 
-    loadGLTFModel('sky_ship.glb', (model) => {
-        skyShipModel = model;
-        skyShipModel.scale.set(500, 500, 500);
-        skyShipModel.position.set(0, 5, 0);
-        skyShipModel.visible = true;
-        scene.add(skyShipModel);
-        onModelLoaded(0);
-    }, (loaded, total) => {
-        modelProgress[0] = loaded;
-        modelTotals[0] = total;
+    function loadNextModel() {
+        const config = modelConfigs[currentModelIndex];
+        modelBytesLoaded = 0;
+        modelBytesTotal = 0;
         updateProgress();
-    });
+        loadGLTFModel(config.file, (model) => {
+            config.setup(model);
+            onModelLoaded();
+        }, (loaded, total) => {
+            modelBytesLoaded = loaded;
+            modelBytesTotal = total;
+            updateProgress();
+        });
+    }
 
-    loadGLTFModel('book_town.glb', (townModel) => {
-        bookTownModel = townModel;
-        bookTownModel.scale.set(0.01 * 500, 0.01 * 500, 0.01 * 500);
-        bookTownModel.position.set(0 * 500, -0.4 * 500, -3.3 * 500);
-        bookTownModel.visible = true;
-        scene.add(bookTownModel);
-        onModelLoaded(1);
-    }, (loaded, total) => {
-        modelProgress[1] = loaded;
-        modelTotals[1] = total;
-        updateProgress();
-    });
-
-    loadGLTFModel('winter_scene.glb', (winterModel) => {
-        winterSceneModel = winterModel;
-        winterSceneModel.scale.set(0.01 * 800, 0.01 * 800, 0.01 * 800);
-        winterSceneModel.position.set(576, 95, -1293);
-        winterSceneModel.rotation.y = Math.PI;
-        winterSceneModel.visible = true;
-        scene.add(winterSceneModel);
-        onModelLoaded(2);
-    }, (loaded, total) => {
-        modelProgress[2] = loaded;
-        modelTotals[2] = total;
-        updateProgress();
-    });
-
-    loadGLTFModel('mountain_and_river_scroll.glb', (mountainModel) => {
-        mountainRiverModel = mountainModel;
-        mountainRiverModel.scale.set(0.01 * 800, 0.01 * 800, 0.01 * 800);
-        mountainRiverModel.position.set(78.3, -234, -2723);
-        mountainRiverModel.rotation.y = -Math.PI / 2;
-        mountainRiverModel.visible = true;
-        scene.add(mountainRiverModel);
-        onModelLoaded(3);
-    }, (loaded, total) => {
-        modelProgress[3] = loaded;
-        modelTotals[3] = total;
-        updateProgress();
-    });
+    loadNextModel();
 
     camera.position.set(-818, 160, 30.5);
     yaw = -30.6 * Math.PI / 180;

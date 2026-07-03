@@ -226,10 +226,18 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(200, 190, 255, 0.9);
-            font-size: 20px;
             z-index: 200;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.8s ease;
+        }
+
+        #loading-text {
+            color: rgba(200, 190, 255, 0.9);
+            font-size: 20px;
             letter-spacing: 4px;
             animation: loadingPulse 1.5s ease-in-out infinite;
         }
@@ -237,6 +245,42 @@
         @keyframes loadingPulse {
             0%, 100% { opacity: 0.3; }
             50% { opacity: 1; }
+        }
+
+        #loading-bar-container {
+            width: 300px;
+            height: 4px;
+            background: rgba(60, 40, 120, 0.4);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(120, 100, 255, 0.2), inset 0 0 8px rgba(120, 100, 255, 0.1);
+            border: 1px solid rgba(160, 140, 255, 0.2);
+        }
+
+        #loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(140, 120, 255, 0.7), rgba(180, 160, 255, 0.9), rgba(140, 120, 255, 0.7));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 12px rgba(160, 140, 255, 0.5), 0 0 25px rgba(120, 100, 255, 0.3);
+            animation: barGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes barGlow {
+            0%, 100% {
+                box-shadow: 0 0 12px rgba(160, 140, 255, 0.5), 0 0 25px rgba(120, 100, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 18px rgba(180, 160, 255, 0.7), 0 0 35px rgba(140, 120, 255, 0.5);
+            }
+        }
+
+        #loading-percent {
+            color: rgba(180, 160, 240, 0.7);
+            font-size: 13px;
+            letter-spacing: 2px;
+            font-family: 'Consolas', monospace;
         }
         @keyframes bgShift {
             0% { background: #0a0a1a; }
@@ -299,7 +343,13 @@
             <div id="scene-name" style="opacity:0; transition:opacity 0.8s; font-family:'Ma Shan Zheng', serif; font-size:50px; color:rgba(255,255,255,0.8); text-shadow: 0 0 20px rgba(180, 160, 255, 0.6); letter-spacing:15px; margin-top:20px; animation: sceneFloat 3s ease-in-out infinite;">书本小镇</div>
             <div class="title-hint">点击进入</div>
         </div>
-        <div id="loading">✦ 梦 境 加 载 中 ✦</div>
+        <div id="loading">
+            <div id="loading-text">✦ 梦 境 加 载 中 ✦</div>
+            <div id="loading-bar-container">
+                <div id="loading-bar"></div>
+            </div>
+            <div id="loading-percent">0%</div>
+        </div>
         <div id="ui" style="display:none;">
             <h2>✦ 梦境 ✦</h2>
             <p><strong>W/A/S/D</strong> — 穿梭梦境</p>

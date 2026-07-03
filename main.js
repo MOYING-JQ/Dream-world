@@ -4,6 +4,8 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 const canvasContainer = document.getElementById('canvas-container');
 const loadingDiv = document.getElementById('loading');
+const loadingBar = document.getElementById('loading-bar');
+const loadingPercent = document.getElementById('loading-percent');
 const mapButtons = document.querySelectorAll('.map-btn');
 const speedValue = document.getElementById('speed-value');
 
@@ -290,7 +292,7 @@ document.addEventListener('wheel', (event) => {
     speedValue.textContent = Math.round(moveSpeed);
 }, { passive: false });
 
-function loadGLTFModel(url, onLoad) {
+function loadGLTFModel(url, onLoad, onProgress) {
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
@@ -305,9 +307,17 @@ function loadGLTFModel(url, onLoad) {
             }
         });
         onLoad(model);
-    }, undefined, (error) => {
+    }, (progress) => {
+        if (onProgress && progress.total > 0) {
+            onProgress(progress.loaded, progress.total);
+        }
+    }, (error) => {
         console.error('Error loading model:', error);
-        loadingDiv.textContent = '模型加载失败';
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            loadingText.textContent = '模型加载失败';
+            loadingText.style.color = 'rgba(255, 120, 120, 0.9)';
+        }
     });
 }
 
@@ -505,14 +515,52 @@ function init() {
     let loadedCount = 0;
     const totalModels = 4;
 
+    let currentPercent = 0;
+    let targetPercent = 0;
+    let animFrame = null;
+
+    function animateProgressBar() {
+        const diff = targetPercent - currentPercent;
+        if (Math.abs(diff) < 0.5) {
+            currentPercent = targetPercent;
+        } else {
+            currentPercent += diff * 0.08;
+        }
+        if (loadingBar) {
+            loadingBar.style.width = Math.round(currentPercent) + '%';
+        }
+        if (loadingPercent) {
+            loadingPercent.textContent = Math.round(currentPercent) + '%';
+        }
+        if (currentPercent < targetPercent) {
+            animFrame = requestAnimationFrame(animateProgressBar);
+        }
+    }
+
+    function setProgress(percent) {
+        targetPercent = Math.min(percent, 100);
+        if (!animFrame) {
+            animFrame = requestAnimationFrame(animateProgressBar);
+        }
+    }
+
     function onModelLoaded() {
         loadedCount++;
+        setProgress((loadedCount / totalModels) * 100);
         if (loadedCount >= totalModels) {
-            loadingDiv.style.display = 'none';
-            dreamTitle.style.transition = 'opacity 1.5s';
-            dreamTitle.style.opacity = '1';
-            document.getElementById('ui').style.display = 'block';
-            document.getElementById('map-switch').style.display = 'block';
+            const checkDone = setInterval(() => {
+                if (currentPercent >= 99) {
+                    clearInterval(checkDone);
+                    loadingDiv.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingDiv.style.display = 'none';
+                    }, 800);
+                    dreamTitle.style.transition = 'opacity 1.5s';
+                    dreamTitle.style.opacity = '1';
+                    document.getElementById('ui').style.display = 'block';
+                    document.getElementById('map-switch').style.display = 'block';
+                }
+            }, 50);
         }
     }
 

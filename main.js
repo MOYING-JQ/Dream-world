@@ -235,9 +235,15 @@ document.addEventListener('keydown', (event) => {
         }
     }
     if (event.code === 'KeyG' && isMouseLocked && !event.repeat && savedPosition) {
-        camera.position.copy(savedPosition);
-        yaw = savedYaw;
-        pitch = savedPitch;
+        camStart.copy(camera.position);
+        yawStart = yaw;
+        pitchStart = pitch;
+        camTarget = savedPosition.clone();
+        yawTarget = savedYaw;
+        pitchTarget = savedPitch;
+        transitionElapsed = 0;
+        transitionDuration = 0.8;
+        isTransitioning = true;
     }
 });
 
